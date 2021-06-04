@@ -159,4 +159,7 @@ And that's it! If you're reading this, it works!
 
 I enjoyed putting this project together. Although not terribly complex, it was useful for me to think about how templating systems work, and to use built-in Node functions in a way that I would have in Python. One of Node's strength is the package library, but it can be helpful to explore the standard library and understand how those packages are built.
 
-As a follow-up, I want to implement post tagging so I can show related posts under the current post. I will also need to add more specificity to the filename generator should two posts have the same three words at the start of their title.
+To follow-up, I want to implement:
+- post tagging so I can show related posts under the current post
+- add more specificity to the filename generator should two posts have the same three words at the start of their title.
+- add RSS feed generation
