@@ -1,5 +1,4 @@
 @import url("https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,600,600italic,700");
-@import url("fontawesome-all.min.css");
 
 /*
 	Miniport by HTML5 UP
@@ -75,6 +74,22 @@ input, select, textarea {
 	-ms-appearance: none;
 	appearance: none;
 }
+
+code {
+	font-family: monospace;
+}
+
+pre > code {
+	line-height: 1.5em;
+	display: block;
+	background-color: rgba(0, 0, 0, .1);
+	padding: 0.5em 1em;
+	border-radius: 3px;
+	box-shadow: 2px 2px 4px 1px rgba(0, 0, 128, 0.4);
+	margin-bottom: 2em;
+	overflow-x: scroll;
+}
+
 
 /* Basic */
 
@@ -1749,26 +1764,6 @@ input, select, textarea {
 				background-color: #3f3f3f;
 			}
 
-/* List */
-
-	ul {
-		list-style: disc;
-		padding-left: 1em;
-	}
-
-		ul li {
-			padding-left: 0.5em;
-		}
-
-	ol {
-		list-style: decimal;
-		padding-left: 1.25em;
-	}
-
-		ol li {
-			padding-left: 0.25em;
-		}
-
 /* Social */
 
 	ul.social {
@@ -1908,6 +1903,7 @@ input, select, textarea {
 		.wrapper.style2 {
 			background-color: #fafafa;
 			text-shadow: 1px 1px 0px #fff;
+			text-align: left;
 		}
 
 		.wrapper.style3 {
@@ -2041,8 +2037,32 @@ input, select, textarea {
 				color: inherit;
 			}
 
+	#blog-top {
+		padding: 3em 0;
+	}
+	#blog-content h3, #blog-content h2 {
+		padding-bottom: 4px;
+		border-bottom: 1px solid lightgray;
+		margin-bottom: 16px;
+	}
+
+	#blog-content p {
+		font-size: 1.25em;
+	}
+
+	#blog-content ul {
+		margin-left: 1.5em;
+		font-size: 1.25em;
+		list-style-type: "\1f449";
+	}
+
 	#contact footer {
 		font-size: 0.9em;
+	}
+
+	#blog-footer {
+		display: flex;
+		justify-content: space-between;
 	}
 
 /* Copyright */
