@@ -1,2 +1,4 @@
 # Bill Chandos Development Portfolio Website
-Based on HTML5UP template Miniport
+Design based on HTML5UP template Miniport, modified.
+
+Includes basic static blog generator.
