@@ -70,6 +70,7 @@ const generate = async () => {
       <link>https://billchandos.dev/blog/${fileName}</link>
       <description>${metadata.description}</description>
       <pubDate>${metadata['published-on']}</pubDate>
+      <guid>https://billchandos.dev/blog/${fileName}</guid>
     </item>
     `;
 

@@ -13,6 +13,7 @@
       <link>https://billchandos.dev/blog/adding_an_rss_feed.html</link>
       <description>Join me as I add an RSS feed to my statically generated blog.</description>
       <pubDate>06 Jun 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/adding_an_rss_feed.html</guid>
     </item>
     
     <item>
@@ -20,6 +21,7 @@
       <link>https://billchandos.dev/blog/building_a_static_blog.html</link>
       <description>Join me as I create a basic markdown-to-HTML static blog generator using NodeJS on Github Pages.</description>
       <pubDate>01 Jun 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/building_a_static_blog.html</guid>
     </item>
     
     </channel>

@@ -71,6 +71,7 @@ Now it's as simple as creating the `<item>` element within the markdown loop.
       <link>https://billchandos.dev/blog/${fileName}</link>
       <description>A great blog post</description>
       <pubDate>${metadata['published-on']}</pubDate>
+      <guid>https://billchandos.dev/blog/${fileName}</guid>
     </item>
     `;
 ```
