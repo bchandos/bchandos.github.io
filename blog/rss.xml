@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<rss version="2.0">
+    <channel>
+        <title>billchandos.dev blog</title>
+        <link>https://billchandos.dev/blog</link>
+        <description>
+            Development focused blog written by Bill Chandos, software developer.
+        </description>
+        <language>en-us</language>
+        
+    <item>
+      <title>Adding an RSS feed to the statically generated blog</title>
+      <link>https://billchandos.dev/blog/adding_an_rss_feed.html</link>
+      <description>Join me as I add an RSS feed to my statically generated blog.</description>
+      <pubDate>06 Jun 2021 00:00:00 GMT</pubDate>
+    </item>
+    
+    <item>
+      <title>Building a Static Blog Generator</title>
+      <link>https://billchandos.dev/blog/building_a_static_blog.html</link>
+      <description>Join me as I create a basic markdown-to-HTML static blog generator using NodeJS on Github Pages.</description>
+      <pubDate>01 Jun 2021 00:00:00 GMT</pubDate>
+    </item>
+    
+    </channel>
+</rss>

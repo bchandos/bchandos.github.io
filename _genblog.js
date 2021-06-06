@@ -2,14 +2,12 @@ const fs = require('fs/promises');
 const showdown = require('showdown');
 const converter = new showdown.Converter({metadata: true});
 
-const insertData = async (templateData) => {
-  // Given HTML string, insert into the base.html file and
-  // return the resulting string
-  const baseHtml = await fs.readFile('./_blog_source/base.html');
+const insertData = async (templateName, templateData, key) => {
+  // Given a string (templateData), insert into the template 
+  // file (templateName) at key and return the resulting string
+  const baseHtml = await fs.readFile(`./_blog_source/${templateName}`);
   const baseString = baseHtml.toString();
-  const outString = baseString.replace('###BLOG#CONTENT###', templateData);
-  
-  return outString
+  return outString = baseString.replace(key, templateData);
 }
 
 const clearBlogDirectory = async () => {
@@ -29,7 +27,7 @@ const markDownFileNames = async () => {
 const generateFilenameFromTitle = (title) => {
   // Generate a useful filename by taking as many as three words
   // from the blog article title and concatenating with underscores
-  return title.toLowerCase().split(' ').slice(0, 3).join('_') + '.html';
+  return title.toLowerCase().split(' ').slice(0, 4).join('_') + '.html';
 }
 
 const generate = async () => {
@@ -41,6 +39,7 @@ const generate = async () => {
   await clearBlogDirectory();
   const mdFiles = await markDownFileNames();
   let indexContent = '<h3>Posts</h3><ul>';
+  let rssContent = '';
   const dateOptions = { month: 'long', year: 'numeric', day: 'numeric'}
   // Create an array of posts to later sort by date
   // (date cannot be determined until markdown metadata is parsed)
@@ -63,7 +62,17 @@ const generate = async () => {
           ${metadata.title}</a>
         <em> &mdash; ${dateString}</em>
       </h4>
-    </li>`
+    </li>`;
+
+    post.rssContent = `
+    <item>
+      <title>${metadata.title}</title>
+      <link>https://billchandos.dev/blog/${fileName}</link>
+      <description>${metadata.description}</description>
+      <pubDate>${metadata['published-on']}</pubDate>
+    </item>
+    `;
+
     post.html = html;
     postArray.push(post);
   }
@@ -72,18 +81,22 @@ const generate = async () => {
   // Generate each blog page contents, and assemble index
   for (let [idx, post] of postArray.entries()) {
     indexContent += post.indexContent;
+    rssContent += post.rssContent;
     // Get next and previous posts for blog footer
     const nextPost = postArray[idx - 1] ? `<a href="${postArray[idx - 1].fileName}">${postArray[idx - 1].title}</a> &#8640;` : '';
     const prevPost = postArray[idx + 1] ? `&#8637; <a href="${postArray[idx + 1].fileName}">${postArray[idx + 1].title}</a>` : '';
     post.html += `<div id="blog-footer"><div>${prevPost}</div> <div>${nextPost}</div></div>`;
     // Write out blog file
-    const blogContent = await insertData(post.html);
+    const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
     await fs.writeFile(`./blog/${post.fileName}`, blogContent);
   }
   indexContent += '</ul>'
   // Write out index file
-  const finalTemplate = await insertData(indexContent);
+  const finalTemplate = await insertData('base.html', indexContent, '###BLOG#CONTENT###');
   await fs.writeFile('./blog/index.html', finalTemplate);
+  // Write out RSS feed
+  const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
+  await fs.writeFile('./blog/rss.xml', finalRss);
 }
 
 generate();

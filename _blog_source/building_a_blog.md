@@ -2,6 +2,7 @@
 layout: post
 published-on: 01 Jun 2021 00:00:00 GMT
 title: Building a Static Blog Generator
+description: Join me as I create a basic markdown-to-HTML static blog generator using NodeJS on Github Pages.
 author: Bill Chandos
 tags: nodejs,node,github,blog,markdown
 ---

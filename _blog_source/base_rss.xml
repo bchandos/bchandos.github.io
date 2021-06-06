@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<rss version="2.0">
+    <channel>
+        <title>billchandos.dev blog</title>
+        <link>https://billchandos.dev/blog</link>
+        <description>
+            Development focused blog written by Bill Chandos, software developer.
+        </description>
+        <language>en-us</language>
+        ###ITEMS###
+    </channel>
+</rss>

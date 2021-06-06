@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="addinganrssfeedtothisstaticallygeneratedblog">Adding an RSS feed to this statically generated blog</h2>
+<p>I've always been a fan of the good old RSS feed. I appreciate the simplicity and open standard, allowing for developer creativity. Unfortunately, RSS news feeds have been supplanted in recent years by algorithmically driver social feeds like Twitter, Facebook, and reddit.</p>
+<p>In my quest to escape the dark patterns and overall negative energy of The Feed&copy;, I've returned to using <a href="https://github.com/bchandos/rss_feed">my own RSS feed reader</a> to consume news content. I built this as my introduction to learning Flask three years ago. It's basic, but works.</p>
+<p>With Google <a href="https://blog.chromium.org/2021/05/an-experiment-in-helping-users-and-web.html">recently announcing</a> a return of sort for RSS, I figured it would be a good time to add a feed to my statically generated blog.</p>
+<p>Because the site is statically generated (i.e. there is a "build" step) the XML file can just be included in that process as another output.</p>
+<p>There are a number ways I could approach this:</p>
+<ul>
+<li>Build the XML file as a string, directly in Javascript;</li>
+<li>Build the XML with a general-purpose templating engine, like <a href="https://www.npmjs.com/package/handlebars"><code>handlebars</code></a>, or <a href="https://www.npmjs.com/package/ejs"><code>ejs</code></a>;</li>
+<li>Use a purpose built library, like <a href="https://www.npmjs.com/package/rss"><code>rss</code></a>.</li>
+</ul>
+<p>Option one is the most similar to what I am already doing, so I'll start with that. Option two seems like overkill, although if I decide to integrate templating for the entire blog, I can return to it. I'll explore option three should I get frustrated with the doing things the hard way.</p>
+<p>First I'll need to create a base template, similar to <code>base.html</code> that will contain the basic structure of the RSS. I will name this <code>base_rss.xml</code>.</p>
+<pre><code>&lt;?xml version="1.0" ?&gt;
+&lt;rss version="2.0"&gt;
+    &lt;channel&gt;
+        &lt;title&gt;billchandos.dev blog&lt;/title&gt;
+        &lt;link&gt;https://billchandos.dev/blog&lt;/link&gt;
+        &lt;description&gt;
+            Development focused blog written by Bill Chandos, 
+            software developer.
+        &lt;/description&gt;
+        &lt;language&gt;en-us&lt;/language&gt;
+        ###ITEMS###
+    &lt;/channel&gt;
+&lt;/rss&gt;
+</code></pre>
+<p>I will work on more details later, but for now notice I've again marked where dynamic content should be inserted using the "three hashes" method (he doesn't know how to use the three hashes?!?).</p>
+<p>Next, in <code>_genblog.js</code> (see the original "Building a blog…" post), we can update <code>insertData()</code> to operate on multiple template files with different insertion markers.</p>
+<pre><code>const insertData = async (templateName, templateData, key) =&gt; {
+  const baseHtml = await fs.readFile(`./_blog_source/${templateName}`);
+  const baseString = baseHtml.toString();
+  return outString = baseString.replace(key, templateData);
+}
+</code></pre>
+<p>This still assumes the template files are all in the same location, but is otherwise more robust than the prior version, which accepted only <code>templateData</code> and hardcoded all other values.</p>
+<p>Of course, I need to update calls to this function:</p>
+<pre><code>const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
+</code></pre>
+<p>Now it's as simple as creating the <code>&lt;item&gt;</code> element within the markdown loop.</p>
+<pre><code>    post.rssContent = `
+    &lt;item&gt;
+      &lt;title&gt;${metadata.title}&lt;/title&gt;
+      &lt;link&gt;https://billchandos.dev/blog/${fileName}&lt;/link&gt;
+      &lt;description&gt;A great blog post&lt;/description&gt;
+      &lt;pubDate&gt;${metadata['published-on']}&lt;/pubDate&gt;
+    &lt;/item&gt;
+    `;
+</code></pre>
+<p>Note that we use the date directly from metadata, as it is already in the correct format for RSS feeds. Lucky.</p>
+<p>One thing that is missing is a useful description and/or content preview. But we'll come back to that.</p>
+<p>Finally, I can write out an <code>rss.xml</code> file using the modified <code>insertData()</code> function, similar to how <code>index.html</code> is created.</p>
+<pre><code>  const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
+  await fs.writeFile('./blog/rss.xml', finalRss);
+</code></pre>
+<p>And that's all we need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes.</p>
+<pre><code>&lt;description&gt;${metadata.description}&lt;/description&gt;
+</code></pre>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>RSS feeds are very cool and you should use them.</p>
+<p>Next, I would like to add <code>&lt;category&gt;</code> tags to each item, based on the existing tag metadata. I will do this when I build out the tagging recommendation system.</p><div id="blog-footer"><div>&#8637; <a href="building_a_static_blog.html">Building a Static Blog Generator</a></div> <div></div></div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+
+</html>

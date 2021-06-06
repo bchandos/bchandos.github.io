@@ -105,17 +105,6 @@ pre > code {
 		padding-top: 3.5em;
 	}
 
-		body.is-preload *, body.is-preload *:before, body.is-preload *:after {
-			-moz-animation: none !important;
-			-webkit-animation: none !important;
-			-ms-animation: none !important;
-			animation: none !important;
-			-moz-transition: none !important;
-			-webkit-transition: none !important;
-			-ms-transition: none !important;
-			transition: none !important;
-		}
-
 	body, input, textarea, select {
 		font-family: 'Open Sans', sans-serif;
 		line-height: 1.85em;
@@ -2039,6 +2028,15 @@ pre > code {
 
 	#blog-top {
 		padding: 3em 0;
+	}
+	#blog-top header img {
+		width: 48px;
+		margin-left: 0.5em;
+		filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0));
+		transition: filter 200ms ease-in-out;
+	}
+	#blog-top header img:hover {
+		filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, .7));
 	}
 	#blog-content h3, #blog-content h2 {
 		padding-bottom: 4px;
