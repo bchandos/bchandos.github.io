@@ -52,10 +52,10 @@
             <div class="row">
                 <div class="col-8 col-7-large col-12-medium">
                     <h2 id="addinganrssfeedtothisstaticallygeneratedblog">Adding an RSS feed to this statically generated blog</h2>
-<p>I've always been a fan of the good old RSS feed. I appreciate the simplicity and open standard, allowing for developer creativity. Unfortunately, RSS news feeds have been supplanted in recent years by algorithmically driver social feeds like Twitter, Facebook, and reddit.</p>
-<p>In my quest to escape the dark patterns and overall negative energy of The Feed&copy;, I've returned to using <a href="https://github.com/bchandos/rss_feed">my own RSS feed reader</a> to consume news content. I built this as my introduction to learning Flask three years ago. It's basic, but works.</p>
-<p>With Google <a href="https://blog.chromium.org/2021/05/an-experiment-in-helping-users-and-web.html">recently announcing</a> a return of sort for RSS, I figured it would be a good time to add a feed to my statically generated blog.</p>
-<p>Because the site is statically generated (i.e. there is a "build" step) the XML file can just be included in that process as another output.</p>
+<p>I've always been a fan of the good old RSS feed. I appreciate the simplicity and open standard, allowing for choice and developer creativity. Unfortunately, RSS news feeds have been supplanted in recent years by algorithmically driven social feeds like Twitter, Facebook, and reddit.</p>
+<p>In my quest to escape the dark patterns and overall negative energy of those feeds, I've returned to using <a href="https://github.com/bchandos/rss_feed">my own RSS feed reader</a> to consume news content. I built this as my introduction to learning Flask three years ago. It's basic, but works, and is a good tool for tinkering.</p>
+<p>With Google <a href="https://blog.chromium.org/2021/05/an-experiment-in-helping-users-and-web.html">recently announcing</a> a return of sorts for RSS, I figured it would be a good time to add a feed to my statically generated blog.</p>
+<p>Because this site is statically generated (i.e. there is a "build" step) the XML file can just be included in that process as another output.</p>
 <p>There are a number ways I could approach this:</p>
 <ul>
 <li>Build the XML file as a string, directly in Javascript;</li>
@@ -78,8 +78,8 @@
     &lt;/channel&gt;
 &lt;/rss&gt;
 </code></pre>
-<p>I will work on more details later, but for now notice I've again marked where dynamic content should be inserted using the "three hashes" method (he doesn't know how to use the three hashes?!?).</p>
-<p>Next, in <code>_genblog.js</code> (see the original "Building a blog…" post), we can update <code>insertData()</code> to operate on multiple template files with different insertion markers.</p>
+<p>I will work on more details later, but for now notice I've again marked where dynamic content should be inserted using the "three hashes" method (he doesn't know how to use the three hashes?!? HA HA HA!).</p>
+<p>Next, in <code>_genblog.js</code> (see the original "Building a blog…" post), I can update <code>insertData()</code> to operate on multiple template files with different insertion markers.</p>
 <pre><code>const insertData = async (templateName, templateData, key) =&gt; {
   const baseHtml = await fs.readFile(`./_blog_source/${templateName}`);
   const baseString = baseHtml.toString();
@@ -107,7 +107,7 @@
 <pre><code>  const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
   await fs.writeFile('./blog/rss.xml', finalRss);
 </code></pre>
-<p>And that's all we need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes.</p>
+<p>And that's all I need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes.</p>
 <pre><code>&lt;description&gt;${metadata.description}&lt;/description&gt;
 </code></pre>
 <h3 id="lessonsandnextsteps">Lessons and next steps</h3>

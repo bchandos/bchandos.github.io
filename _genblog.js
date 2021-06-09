@@ -90,14 +90,17 @@ const generate = async () => {
     // Write out blog file
     const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
     await fs.writeFile(`./blog/${post.fileName}`, blogContent);
+    console.log(`Writing ${post.fileName}.`)
   }
   indexContent += '</ul>'
   // Write out index file
   const finalTemplate = await insertData('base.html', indexContent, '###BLOG#CONTENT###');
   await fs.writeFile('./blog/index.html', finalTemplate);
+  console.log('Writing index.html');
   // Write out RSS feed
   const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
   await fs.writeFile('./blog/rss.xml', finalRss);
+  console.log('Wrinting rss.xml');
 }
 
 generate();
