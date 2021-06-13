@@ -62,7 +62,7 @@ Of course, I need to update calls to this function:
 const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
 ```
 
-Now it's as simple as creating the `<item>` element within the markdown loop.
+Now it's as simple as creating the `<item>` element within the markdown loop. (Remember that we're adding post content to an object because we need to sort the array by date after the file processing loop.)
 
 ```
     post.rssContent = `
@@ -78,7 +78,7 @@ Now it's as simple as creating the `<item>` element within the markdown loop.
 
 Note that we use the date directly from metadata, as it is already in the correct format for RSS feeds. Lucky.
 
-One thing that is missing is a useful description and/or content preview. But we'll come back to that.
+One thing that is missing is a useful description and/or content preview. But I'll come back to that.
 
 Finally, I can write out an `rss.xml` file using the modified `insertData()` function, similar to how `index.html` is created.
 
@@ -87,7 +87,7 @@ Finally, I can write out an `rss.xml` file using the modified `insertData()` fun
   await fs.writeFile('./blog/rss.xml', finalRss);
 ```
 
-And that's all I need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes.
+And that's all I need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes. That allows me to do this:
 
 ```
 <description>${metadata.description}</description>

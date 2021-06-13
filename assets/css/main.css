@@ -2063,6 +2063,14 @@ pre > code {
 		justify-content: space-between;
 	}
 
+	#blog-recommendations {
+		margin-top: 2em;
+	}
+
+	#blog-recommendations ul {
+		font-size: 1em;
+	}
+
 /* Copyright */
 
 	#copyright {

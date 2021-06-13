@@ -90,7 +90,7 @@
 <p>Of course, I need to update calls to this function:</p>
 <pre><code>const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
 </code></pre>
-<p>Now it's as simple as creating the <code>&lt;item&gt;</code> element within the markdown loop.</p>
+<p>Now it's as simple as creating the <code>&lt;item&gt;</code> element within the markdown loop. (Remember that we're adding post content to an object because we need to sort the array by date after the file processing loop.)</p>
 <pre><code>    post.rssContent = `
     &lt;item&gt;
       &lt;title&gt;${metadata.title}&lt;/title&gt;
@@ -102,17 +102,22 @@
     `;
 </code></pre>
 <p>Note that we use the date directly from metadata, as it is already in the correct format for RSS feeds. Lucky.</p>
-<p>One thing that is missing is a useful description and/or content preview. But we'll come back to that.</p>
+<p>One thing that is missing is a useful description and/or content preview. But I'll come back to that.</p>
 <p>Finally, I can write out an <code>rss.xml</code> file using the modified <code>insertData()</code> function, similar to how <code>index.html</code> is created.</p>
 <pre><code>  const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
   await fs.writeFile('./blog/rss.xml', finalRss);
 </code></pre>
-<p>And that's all I need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes.</p>
+<p>And that's all I need to generate the basic RSS feed. Circling back to the description, this should likely be included in our markdown metadata as it can not easily be derived from the contents, and may be useful for other purposes. That allows me to do this:</p>
 <pre><code>&lt;description&gt;${metadata.description}&lt;/description&gt;
 </code></pre>
 <h3 id="lessonsandnextsteps">Lessons and next steps</h3>
 <p>RSS feeds are very cool and you should use them.</p>
-<p>Next, I would like to add <code>&lt;category&gt;</code> tags to each item, based on the existing tag metadata. I will do this when I build out the tagging recommendation system.</p><div id="blog-footer"><div>&#8637; <a href="building_a_static_blog.html">Building a Static Blog Generator</a></div> <div></div></div>
+<p>Next, I would like to add <code>&lt;category&gt;</code> tags to each item, based on the existing tag metadata. I will do this when I build out the tagging recommendation system.</p><div id="blog-footer"><div>&#8637; <a href="building_a_static_blog.html">Building a Static Blog Generator</a></div> <div><a href="add_post_tagging_and.html">Add post tagging and recommendations to the blog</a> &#8640;</div></div>
+      <div id="blog-recommendations">
+        <h4>You may also like ... </h4>
+        <ul><li><a href="add_post_tagging_and.html">Add post tagging and recommendations to the blog</a></li><li><a href="building_a_static_blog.html">Building a Static Blog Generator</a></li></ul>
+      </div>
+      
                 </div>
             </div>
         </div>

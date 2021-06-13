@@ -10,6 +10,14 @@
         <language>en-us</language>
         
     <item>
+      <title>Add post tagging and recommendations to the blog</title>
+      <link>https://billchandos.dev/blog/add_post_tagging_and.html</link>
+      <description>Join me as I add a tagging and post recommendation system to my static blog generator.</description>
+      <pubDate>13 Jun 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/add_post_tagging_and.html</guid>
+    </item>
+    
+    <item>
       <title>Adding an RSS feed to the statically generated blog</title>
       <link>https://billchandos.dev/blog/adding_an_rss_feed.html</link>
       <description>Join me as I add an RSS feed to my statically generated blog.</description>

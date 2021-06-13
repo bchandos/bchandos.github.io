@@ -53,6 +53,7 @@ const generate = async () => {
     const dateString = date.toLocaleDateString('us-EN', dateOptions);
     let post = {}
     post.title = metadata.title;
+    post.tags = metadata.tags.split(',');
     post.fileName = fileName;
     post.publishDate = date;
     post.indexContent = `
@@ -87,6 +88,33 @@ const generate = async () => {
     const nextPost = postArray[idx - 1] ? `<a href="${postArray[idx - 1].fileName}">${postArray[idx - 1].title}</a> &#8640;` : '';
     const prevPost = postArray[idx + 1] ? `&#8637; <a href="${postArray[idx + 1].fileName}">${postArray[idx + 1].title}</a>` : '';
     post.html += `<div id="blog-footer"><div>${prevPost}</div> <div>${nextPost}</div></div>`;
+    // Process post tags, and find similar posts
+    let recommendationArray = [];
+    for (let otherPost of postArray.filter(p => p !== post)) {
+      const tagCount = post.tags.filter(t => otherPost.tags.includes(t)).length;
+      recommendationArray.push(
+        {
+          tagCount, 
+          fileName: otherPost.fileName, 
+          title: otherPost.title
+        }
+      );
+    }
+    recommendationArray = recommendationArray.filter(r => r.tagCount !== 0);
+    recommendationArray.sort((a, b) => b.tagCount - a.tagCount);
+    let topTwo = recommendationArray.slice(0, 2);
+    if (topTwo.length > 0) {
+      let recString = '';
+      for (let { fileName, title } of topTwo) {
+        recString += `<li><a href="${fileName}">${title}</a></li>`
+      }
+      post.html += `
+      <div id="blog-recommendations">
+        <h4>You may also like ... </h4>
+        <ul>${recString}</ul>
+      </div>
+      `;
+    }
     // Write out blog file
     const blogContent = await insertData('base.html', post.html, '###BLOG#CONTENT###');
     await fs.writeFile(`./blog/${post.fileName}`, blogContent);

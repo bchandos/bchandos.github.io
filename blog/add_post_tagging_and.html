@@ -1,0 +1,180 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="addingposttagsandrecommendationstothestaticbloggenerator">Adding post tags and recommendations to the static blog generator</h2>
+<p>In a <a href="">recent post</a> I covered writing a rudimentary static blog generator using NodeJS and Markdown.</p>
+<p>In addition to basic next and previous post navigation, I'd also like to add tag-based recommendations. For example, this blog post may be tagged with keywords like "blog", "markdown", "nodejs" and at the bottom, I'd like to recommend other posts that share some or all of those tags.</p>
+<p>I only have access to the markdown metadata in the first iteration over the Markdown files, so I'll parse it and add as an array to the post object.</p>
+<pre><code>post.tags = metadata.tag.split(',');
+</code></pre>
+<p>Now, the tagging system has no inherent structure. It is just keywords that I have thought to add to the post metadata. It's not drawn from a common dictionary, nor are there minimums, limits, or other rules applied. Given this relative lack of sophistication, I'm going to start with a rather naïve approach: for each post, I'm going to loop through its array of tags, comparing tag frequency with every <em>other</em> post, noting the number of common tags, and then picking the top two or three posts based on that figure. Given the multiple iterations per post, I expect this will begin to perform poorly as the number of posts grows. But, as I write this, there are exactly two other blog posts and so I will manage performance degradation as it starts to reveal itself.</p>
+<p>Since I am looking for similarity between an array of strings, I first thought of using sets. Sadly, Javascript does not provide native intersection or union operations for sets, so using a set would only gain deduplication. That's not very useful when I am the one writing the tags. I just have to remember to not type the same tag twice.</p>
+<p>Here's a code snippet I found on StackOverflow:</p>
+<pre><code>const intersection = array1.filter(element =&gt; array2.includes(element));
+</code></pre>
+<p>But I need this to operate on all other posts.</p>
+<pre><code>for (let otherPost in postArray.filter(p =&gt; p !== post)) {
+    const intersection = post.tags.filter(t =&gt; otherPost.tags.includes(t));
+}
+</code></pre>
+<p>Note I am filtering the postArray prior to iterating so I do not compare a post to itself, thereby recommending a post someone has just read.</p>
+<p>Interestingly, I don't actually need to know which tags overlap (for now). I just need to know how many.</p>
+<pre><code>const tagCount = post.tags.filter(t =&gt; otherPost.tags.includes(t)).length;
+</code></pre>
+<p>Within this loop, I lack the context to make any decisions about whether these two posts are, so I should push our value to another array. I'll also need a reference to the other post, but unfortunately the blog posts to not have unique IDs. I could use the array index … but I've messed that up by filtering the array before iteration!</p>
+<p>Time to go full blockhead:</p>
+<pre><code>let recommendationArray = [];
+for (let [idx, otherPost] of postArray.entries()) {
+    if (post !== otherPost) {
+    const tagCount = post.tags.filter(t =&gt; otherPost.tags.includes(t)).length;
+    recommendationArray.push({idx, tagCount});
+    }
+}
+</code></pre>
+<p>Note, I'm using ES2015 shorthand property names in the object that is added to the array.</p>
+<p>So now I have an array of objects for every other post but the current post that includes its index within <code>postArray</code> as well as how many tags the two posts have in common. There are many ways to process this data. For my purpose, I think that I will want no more than 2 recommended posts, and recommended posts must have at least 1 tag in common.</p>
+<p>I'll begin by removing all items with a <code>tagCount</code> of 0, and then sort.</p>
+<pre><code>recommendationArray = recommendationArray.filter(r =&gt; r.tagCount !== 0);
+recommendationArray.sort((a, b) =&gt; b.tagCount - a.tagCount);
+</code></pre>
+<p>To get the top two values, I will use <code>.slice()</code>. This works because <code>.slice()</code> will not fail if there are fewer elements in the array than requested. It will even work on an empty array.</p>
+<pre><code>let topTwo = recommendationArray.slice(0, 2);
+</code></pre>
+<p>Now it's time to generate the appropriate HTML for each of the recommended posts.</p>
+<pre><code>let recString = '';
+for (let { idx } of topTwo) {
+    const recommendedPost = postArray[idx];
+    recString += `&lt;li&gt;&lt;a href="${recommendedPost.fileName}"&gt;${recommendedPost.title}&lt;/a&gt;&lt;/li&gt;`
+}
+</code></pre>
+<p>I use object destructuring to extract only the <code>idx</code> value, as the tagCount is irrelevant (this will not be exposed to the user). Looking back on this code, I realize that using the index is probably unecessary: I need the post's <code>fileName</code> and <code>title</code> only, why not just write those directly to the array? This seems clearer, and also allows me to go back to filtering <code>postArray</code> in the loop constructor.</p>
+<pre><code>for (let otherPost of postArray.filter(p =&gt; p !== post)) {
+...
+recommendationArray.push(
+    {
+        tagCount, 
+        fileName: otherPost.fileName, 
+        title: otherPost.title
+    }
+);
+...
+for (let { fileName, title } of topTwo) {
+    recString += `&lt;li&gt;&lt;a href="${fileName}"&gt;${title}&lt;/a&gt;&lt;/li&gt;`
+}
+</code></pre>
+<p>Finally, I'll wrap the string concatenation in an <code>if</code> statement, so that the recommendation section does not appear if there are no recommended blog posts.</p>
+<pre><code>if (topTwo.length &gt; 0) {
+    ...
+}
+</code></pre>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>There was nothing particularly novel or challenging about this. It consists of fairly standard programming tasks and builds upon much of the previous work.</p>
+<p>I am noticing, however, that the primary loop that iterates over all the collected blog posts is getting rather long. I will explore whether it makes sense to refactor this, or whether it's time to consider a proper templating engine.</p><div id="blog-footer"><div>&#8637; <a href="adding_an_rss_feed.html">Adding an RSS feed to the statically generated blog</a></div> <div></div></div>
+      <div id="blog-recommendations">
+        <h4>You may also like ... </h4>
+        <ul><li><a href="building_a_static_blog.html">Building a Static Blog Generator</a></li><li><a href="adding_an_rss_feed.html">Adding an RSS feed to the statically generated blog</a></li></ul>
+      </div>
+      
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+
+</html>
