@@ -67,11 +67,11 @@
     const intersection = post.tags.filter(t =&gt; otherPost.tags.includes(t));
 }
 </code></pre>
-<p>Note I am filtering the postArray prior to iterating so I do not compare a post to itself, thereby recommending a post someone has just read.</p>
+<p>Note I am filtering the <code>postArray</code> prior to iterating so I do not compare a post to itself, thereby recommending a post someone has just read.</p>
 <p>Interestingly, I don't actually need to know which tags overlap (for now). I just need to know how many.</p>
 <pre><code>const tagCount = post.tags.filter(t =&gt; otherPost.tags.includes(t)).length;
 </code></pre>
-<p>Within this loop, I lack the context to make any decisions about whether these two posts are, so I should push our value to another array. I'll also need a reference to the other post, but unfortunately the blog posts to not have unique IDs. I could use the array index … but I've messed that up by filtering the array before iteration!</p>
+<p>Within this loop, I lack the context to make any decisions about whether <code>otherPost</code> should be included on <code>post</code>s page, so I should push our value to another array for later comparison. I'll also need a reference to the other post, but unfortunately the blog posts to not have unique IDs. I could use the array index … but I've messed that up by filtering the array before iteration!</p>
 <p>Time to go full blockhead:</p>
 <pre><code>let recommendationArray = [];
 for (let [idx, otherPost] of postArray.entries()) {

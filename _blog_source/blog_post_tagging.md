@@ -37,7 +37,7 @@ for (let otherPost in postArray.filter(p => p !== post)) {
 }
 ```
 
-Note I am filtering the postArray prior to iterating so I do not compare a post to itself, thereby recommending a post someone has just read.
+Note I am filtering the `postArray` prior to iterating so I do not compare a post to itself, thereby recommending a post someone has just read.
 
 Interestingly, I don't actually need to know which tags overlap (for now). I just need to know how many.
 
@@ -45,7 +45,7 @@ Interestingly, I don't actually need to know which tags overlap (for now). I jus
 const tagCount = post.tags.filter(t => otherPost.tags.includes(t)).length;
 ```
 
-Within this loop, I lack the context to make any decisions about whether these two posts are, so I should push our value to another array. I'll also need a reference to the other post, but unfortunately the blog posts to not have unique IDs. I could use the array index ... but I've messed that up by filtering the array before iteration!
+Within this loop, I lack the context to make any decisions about whether `otherPost` should be included on `post`s page, so I should push our value to another array for later comparison. I'll also need a reference to the other post, but unfortunately the blog posts to not have unique IDs. I could use the array index ... but I've messed that up by filtering the array before iteration!
 
 Time to go full blockhead:
 
