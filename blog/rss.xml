@@ -10,6 +10,14 @@
         <language>en-us</language>
         
     <item>
+      <title>Adding Weather Alerts to Vue App using Public API</title>
+      <link>https://billchandos.dev/blog/adding_weather_alerts_to.html</link>
+      <description>Join me as I modify my basic weather application by adding weather alerts from the National Weather Service API</description>
+      <pubDate>27 Jun 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/adding_weather_alerts_to.html</guid>
+    </item>
+    
+    <item>
       <title>Add post tagging and recommendations to the blog</title>
       <link>https://billchandos.dev/blog/add_post_tagging_and.html</link>
       <description>Join me as I add a tagging and post recommendation system to my static blog generator.</description>

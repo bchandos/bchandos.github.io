@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="addingweatheralertstobasicweatherappusingpublicapi">Adding Weather Alerts to Basic Weather App Using Public API</h2>
+<h3 id="background">Background</h3>
+<p>About 9 months ago, I put together a basic weather application that I titled <a href="https://github.com/bchandos/dope-weather">Dope Weather</a>, because I am eleven years old. To be clear, the world does not need another weather app, but I am a proponent of building projects you will actually use as a way to spur and reinforce learning. In this case, my goal was to gain experience with:</p>
+<ul>
+<li><a href="https://v3.vuejs.org/api/composition-api.html">VueJS 3's composition API</a></li>
+<li><a href="https://vitejs.dev/guide/">Vite as a development and build tool</a></li>
+<li><a href="https://tailwindcss.com/">TailwindCSS</a></li>
+<li>Consuming public APIs</li>
+<li><a href="https://www.weather.gov/documentation/services-web-api">NWS</a></li>
+<li><a href="https://public.opendatasoft.com/explore/dataset/georef-united-states-of-america-zc-point/information/nn">US Zip Codes - opendatasoft</a></li>
+<li>Deployment to public host</li>
+</ul>
+<p>And it works! I've been using the app regularly as an interface to NWS weather data and, because of that, have continued working on and updating the project as I've required new features or discovered errors.</p>
+<p><em>Note: I fully awknowledge that the tools listed above are overkill for a weather app. Again, the exercise is learning.</em></p>
+<p>There's more that I'd like to do, but as we're experiencing an extreme heatwave in the Pacific Northwest this weekend, adding weather alerts to the app seems an appropriate task for today.</p>
+<h3 id="firststeps">First steps</h3>
+<p>The app already has a well-defined structure, and while it may not be how I would architect it today, I'm in no mood for a refactor so I'm going to just graft this feature on where needed.</p>
+<p>Something that I like about Vue is the ability to use a standard Javascript file for basic state management. No additional library needed (although they are available), just a <a href="https://v3.vuejs.org/api/basic-reactivity.html#reactive"><code>reactive</code></a> object that can be imported in components as needed. This is great for bridging the gap from pure stateless apps to stateful apps without the added complexity of a fully-featured state library.</p>
+<p>Currently, <a href="https://github.com/bchandos/dope-weather/blob/main/src/store.js">my state object</a> contains information about the currently selected weather location, some basic user settings, and functions to read/write cookies and local storage.</p>
+<p>The National Weather Service has pretty decent API documentation, although one frustration I have with the service is the seemingly arbitrary number of methods by which to identify a location from which to query data. There are zones, regions, areas, stations, offices, points (latitude/longitude), and grid coordinates within a forecast zone. In order to get weather for a ZIP code, the app queries a public API to get latitude and longitude for the ZIP code, then queries NWS for information about that lat/long, including the grid ID and coordinates, which are then used to query NWS and get the forecast data for that grid location. Luckily, some of this data is stored in local storage so - theoretically - only the last request needs to run frequently.</p>
+<p>Adding to this complexity, weather alerts are queried by zone, area, or region, and I have none of this data currently stored. Looking at the data returned from the latitude/longitude query (you can test the API <a href="https://www.weather.gov/documentation/services-web-api#/default/get_points__point_">here</a>) the only one of those 3 I can access is ZoneID, and even that is buried in a URL that will need to be parsed. But at least it's doable.</p>
+<p>So I'll need to update the <code>lookupZip()</code> function, which lives in the <a href="https://github.com/bchandos/dope-weather/blob/main/src/components/ZipCodeInput.vue"><code>ZipCodeInput.vue</code></a> component, to parse that value and add it to current state. I'll also modify the <code>addToHistory()</code> function to store this value in local storage along with the rest of the relevant data.</p>
+<pre><code>const forecastZone = weatherJson.properties.forecastZone.split('/');
+...
+store.zoneId = forecastZone[forecastZone.length - 1];
+...
+store.addToHistory(zip, store.wfo, store.x, store.y, city, state, store.zoneId);
+</code></pre>
+<p>There are many places to set and read the new <code>zoneId</code> value - you can see them all in <a href="https://github.com/bchandos/dope-weather/commit/903c9cd2cb273beb148f77be270fafdaedadbeb1">the commit</a>.</p>
+<p>Here, though, is where the work is actually done.</p>
+<pre><code>const alerts = ref([]);
+...
+const getAlerts = async () =&gt; {
+    const url = `${store.baseURL}/alerts/active/zone/${store.zoneId}`;
+    const response = await fetch(url, {mode: 'cors'});
+    const json = await response.json()
+    try { 
+        alerts.value = json.features;
+    } catch(err) {
+        alerts.value = [];
+    }
+}
+</code></pre>
+<p>And in the template section:</p>
+<pre><code>&lt;div v-for="alert in alerts" :key="alert.id" class="flex justify-between flex-wrap items-center bg-red-300 px-4 py-4 my-2 rounded-md shadow-md"&gt;
+    &lt;h3 class="font-semibold text-center"&gt;
+        &lt;img src="../assets/icons/warning.svg" alt="warning" class="w-6 h-6 inline"&gt;
+        {{ alert.properties.parameters.NWSheadline[0] }}
+    &lt;/h3&gt;
+&lt;/div&gt;
+</code></pre>
+<p>Now, if there are alerts, we will see the headline at the top of the daily forecast. (The headline is an array, although I'm not sure under what circumstances there would be multiple elements. I will assume for now the first element is most relevant.) The warning is not expandable or dismissable, nor do I distinguish between watches and warnings (measures of severity).</p>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>Public APIs are amazing for providing useful and dynamic data around which you can build your applications. But their design choices can leave something to be desired. I'm sure there is an internal consistency to NWS' API design, but as an outsider just trying to get some basic forecast data, there are sometimes confusing hoops to jump through to arrive at the query data needed.</p>
+<p>Next up, I will make the alert panel interactive and perhaps add indicators to the individual daily forecast panels that they occur during an alert.</p><div id="blog-footer"><div>&#8637; <a href="add_post_tagging_and.html">Add post tagging and recommendations to the blog</a></div> <div></div></div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+
+</html>
