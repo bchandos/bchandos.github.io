@@ -20,7 +20,7 @@ About 9 months ago, I put together a basic weather application that I titled [Do
    - [US Zip Codes - opendatasoft](https://public.opendatasoft.com/explore/dataset/georef-united-states-of-america-zc-point/information/nn)
  - Deployment to public host
 
-And it works! I've been using the app regularly as an interface to NWS weather data and, because of that, have continued working on and updating the project as I've required new features or discovered errors.
+And it works! I've been using the app regularly as an interface to NWS weather data and, because of that, have continued working on and updating the project as needed.
 
 *Note: I fully awknowledge that the tools listed above are overkill for a weather app. Again, the exercise is learning.*
 
