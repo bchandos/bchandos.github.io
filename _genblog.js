@@ -128,7 +128,7 @@ const generate = async () => {
   // Write out RSS feed
   const finalRss = await insertData('base_rss.xml', rssContent, '###ITEMS###');
   await fs.writeFile('./blog/rss.xml', finalRss);
-  console.log('Wrinting rss.xml');
+  console.log('Writing rss.xml');
 }
 
 generate();
