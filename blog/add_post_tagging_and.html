@@ -68,7 +68,7 @@
 <pre><code>const intersection = array1.filter(element =&gt; array2.includes(element));
 </code></pre>
 <p>But I need this to operate on all other posts.</p>
-<pre><code>for (let otherPost in postArray.filter(p =&gt; p !== post)) {
+<pre><code>for (let otherPost of postArray.filter(p =&gt; p !== post)) {
     const intersection = post.tags.filter(t =&gt; otherPost.tags.includes(t));
 }
 </code></pre>

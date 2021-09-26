@@ -32,7 +32,7 @@ const intersection = array1.filter(element => array2.includes(element));
 But I need this to operate on all other posts.
 
 ```
-for (let otherPost in postArray.filter(p => p !== post)) {
+for (let otherPost of postArray.filter(p => p !== post)) {
     const intersection = post.tags.filter(t => otherPost.tags.includes(t));
 }
 ```
