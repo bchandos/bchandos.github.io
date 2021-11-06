@@ -1,6 +1,6 @@
 ---
 layout: post
-published-on: 01 Jan 2021 00:00:00 GMT
+published-on: 05 Nov 2021 05:30:00 GMT
 title: Create a self-contained dynamic web component, part 1
 author: Bill Chandos
 description: Join me as I create a generic web component that can load and refresh dynamic contents from the backend.
