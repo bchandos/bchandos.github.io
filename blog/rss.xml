@@ -41,5 +41,13 @@
       <guid>https://billchandos.dev/blog/building_a_static_blog.html</guid>
     </item>
     
+    <item>
+      <title>Create a self-contained dynamic web component, part 1</title>
+      <link>https://billchandos.dev/blog/create_a_self-contained_dynamic.html</link>
+      <description>Join me as I create a generic web component that can load and refresh dynamic contents from the backend.</description>
+      <pubDate>01 Jan 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/create_a_self-contained_dynamic.html</guid>
+    </item>
+    
     </channel>
 </rss>

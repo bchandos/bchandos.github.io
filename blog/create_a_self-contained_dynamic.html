@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+    <!-- Code highlighting -->
+    <link rel="stylesheet"
+      href="//unpkg.com/@highlightjs/cdn-assets@11.1.0/styles/default.min.css">
+    <script src="//unpkg.com/@highlightjs/cdn-assets@11.1.0/highlight.min.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="creatingaselfcontaineddynamicwebcomponentpart1">Creating a self-contained dynamic web component, part 1</h2>
+<p>In the project I work on professionally, we utilize a pattern we call "dynamic widgets". Dynamic widgets are invoked in templates using a special function call that returns HTML/CSS/JS upon initial rendering, along with some special attributes and metadata so that they can be dynamically refreshed. Refreshing is triggered when a request has been made to alter the underlying data displayed within the widget and completely re-renders the dynamic widget, returns the new HTML/CSS/JS and replaces the existing content with the new content. Critically, it does this <em>without</em> a separate, unique route in the controller, so dynamic widgets can be written and deployed as standalone units.</p>
+<p>There are obviously many other solutions to this underlying problem: for example, you can manipulate the DOM manually for each detected change to the data, or you could use a more advanced Javascript framework to manage reactivity and state. However, the system on our project was designed with the MVC model in mind, and prior to more advanced JS frameworks being available (they still remain undesirable in our use case). Intuitively, I like the concept that the presentation and data collection logic live in one place - a template file - and that invoking a refresh will <em>always</em> return fresh data from the database.</p>
+<p>One requirement of our current system that limits its general usefulness is a templating language that can run arbitrary Python code (our backend is written in Python). In our case, that is Mako, and the code run in each widget is generally model methods to retrieve data from the database to be displayed. This is what guarantees fresh data, but it also locks us into specific templating languages, as well as encourages developers to mix presentation and logic in <em>inconsistent</em> ways. </p>
+<p>So I set about updating this pattern to work as a <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components">web component</a>, using Jinja2 as a templating language and Python's bottle.py as a back-end. The goal is for the component to work with any backend and templating language, however there are architectural limitations that need resolving, as I'll discuss later.</p>
+<h3 id="webcomponent">Web component</h3>
+<p>The web component has a number of responsibilities.</p>
+<ul>
+<li>Accept the name of the template to load</li>
+<li>Perform the initial (asynchronous) load of content from the server</li>
+<li>Provide a reload method</li>
+<li>Accept and pass arguments to controller on initial load and reloads</li>
+</ul>
+<p>First, I will define the component class and its constructor.</p>
+<pre><code>class DynamicWidget extends HTMLElement {
+  constructor() {
+    super();
+    const shadow = this.attachShadow({ mode: 'open' });
+    const myDiv = document.createElement('div');
+    shadow.appendChild(myDiv);
+  }
+  ...
+}
+</code></pre>
+<p>This is standard boilerplate code from the documentation, except that I am explicitly adding a <code>div</code> element as the first (and only) child of the component. This element can be changed with an attribute (e.g. to a <code>span</code>), but I don't have access to the attributes during the construction phase.</p>
+<p>In order to access attributes and take action upon them, I must wait for the custom element to be appended into the document-connected element, via the <code>connectedCallback</code> method.</p>
+<pre><code>connectedCallback() {
+    if (this.hasAttribute('elem') &amp;&amp; this.getAttribute('elem') !== 'div') {
+      this.shadowRoot.firstChild.replaceWith(document.createElement(this.getAttribute('elem')));
+    }
+    this.loadInitalContents();
+  }
+</code></pre>
+<p>To support non-<code>&lt;div&gt;</code> root elements, I first check if the custom element has an <code>elem</code> attribute and, if so, replace the <code>&lt;div&gt;</code>. This only needs to happen once. I then call the <code>loadInitialContents</code> method of the component. This method is, unsurprisingly, responsible for loading the initial contents of the widget. It is an <code>async</code> method, as it uses <code>fetch</code> to communicate with the backend, which returns a <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a> and, therefore, must be called with <code>await</code>.</p>
+<pre><code>async loadInitalContents() {
+    await this._loadContents();
+}
+</code></pre>
+<p>However, the work is actually done by the <code>_loadContents()</code> method, as the logic contained therein will later be duplicated by the reload method. The use of underscore here has no strict meaning in JavaScript, it's merely a convention to specify the method is designed to be called by other methods, not consumed directly.</p>
+<pre><code>async _loadContents() {
+    this.loadingAnimation();
+    const dwName = this.getAttribute('name');
+    ...
+</code></pre>
+<p>I will return to <code>loadingAnimation()</code> - likely in a later blog post - but suffice to say its purpose is to provide user feedback of loading/reloading state and prevent interaction with soon-to-be replaced elements. Next, prepare the server request, passing all the element's <code>data-</code> attributes as arguments using the spread operator and <code>dataset</code>. </p>
+<pre><code>    const root = this.shadowRoot.firstChild;
+    const args = { ...this.dataset }
+    const url = new URL('/dynamic-widget', BASE_URL);
+    url.searchParams.append('name', dwName);
+    for (let k of Object.getOwnPropertyNames(args)) {
+      url.searchParams.append(k, args[k]);
+    }
+    const response = await fetch(url);
+</code></pre>
+<p>Note that a <code>POST</code> request would allow transmitting the arguments as JSON in the body of the request. However, I am not requesting a change on the server, I am requesting data from the server, which is what a <code>GET</code> request is for. So, instead, I am adding the arguments as search parameters to the URL. This brings up an interesting issue with argument data types that I'll discuss later.</p>
+<p>If the request is successful, the server will return JSON. The <code>newBody</code> value of that object will contain the HTML to be added to the element - i.e. the rendered contents of the widget. </p>
+<pre><code>    const initContents = await response.json();
+    root.innerHTML = initContents.newBody;
+</code></pre>
+<p>If I expect only HTML and CSS returned from the server, I could finish here:</p>
+<pre><code>    root.innerHTML = initContents.newBody;
+    this.clearLoading();
+</code></pre>
+<p>However, a valid template could have Javascript contained within. Javascript <a href="https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations">does not automatically execute when added via this method</a>. This is a reasonable security limitation, but I trust my own content returned from the server and expect Javascript to run. I can get around this by parsing the returned HTML for <code>&lt;script&gt;</code> tags, creating <code>&lt;script&gt;</code> elements, and appending them to the root of the custom element.</p>
+<pre><code>  const re = /&lt;script[\s\S]*?&gt;([\s\S]*?)&lt;\/script&gt;/gi;
+  const matches = initContents.newBody.matchAll(re);
+  for (let match of matches) {
+    const code = match[1].trim();
+    const scriptTag = document.createElement('script');
+    scriptTag.textContent = code;
+    root.appendChild(scriptTag);
+  }
+</code></pre>
+<p>The regular expression matches opening and closing <code>&lt;script&gt;</code> tags, and creates a group for its contents, so they can be added to the <code>script</code> element using <code>textContent</code>. It is possible there are multiple <code>&lt;script&gt;</code> tags in the returned HTML, so I iterate over the matches.</p>
+<p>There are some further subtleties here that we need to address. The Javascript should execute <em>after the new HTML contents is inserted</em>, as it very likely relies upon it. This could be a source of sneaky bugs as I would have <em>new JS</em> running against <em>old HTML</em> right before replacing the HTML. So I will insert <code>root.innerHTML = initContents.newBody;</code> before the <code>&lt;script&gt;</code> processing code.</p>
+<p>However, this creates a minor ergonomics issue: the Javascript now appears twice in the source as can be seen in the document inspector. This can easily be avoided because Javascripts <code>String.prototype.replace()</code> method accepts a regular expression as its first argument.</p>
+<pre><code>  ...
+  const re = /&lt;script[\s\S]*?&gt;([\s\S]*?)&lt;\/script&gt;/gi;
+  root.innerHTML = initContents.newBody.replace(re, '');
+  const matches = initContents.newBody.matchAll(re);
+  ...
+</code></pre>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>I now have a custom element that is capable of loading its contents asynchronously from the server. Next I need to add dynamic reloading by implementing a method of the web component and a general purpose route in the controller. Stay tuned for part 2 … and beyond!</p><div id="blog-footer"><div></div> <div><a href="building_a_static_blog.html">Building a Static Blog Generator</a> &#8640;</div></div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+<script>
+    hljs.highlightAll();
+</script>
+
+</html>
