@@ -10,6 +10,14 @@
         <language>en-us</language>
         
     <item>
+      <title>Creating your own VS Code server in a container</title>
+      <link>https://billchandos.dev/blog/creating_your_own_vs.html</link>
+      <description>Join me as I setup a Docker container for running Code Server, an open source implementation of the VSCode back-end server.</description>
+      <pubDate>06 Nov 2021 00:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/creating_your_own_vs.html</guid>
+    </item>
+    
+    <item>
       <title>Create a self-contained dynamic web component, part 1</title>
       <link>https://billchandos.dev/blog/create_a_self-contained_dynamic.html</link>
       <description>Join me as I create a generic web component that can load and refresh dynamic contents from the backend.</description>
