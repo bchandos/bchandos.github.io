@@ -102,8 +102,8 @@ And that's it! I launch the container with `docker-compose up` and within a few 
 ### Lessons and next steps
 
 This ticks a couple of the boxes:
- - [x] Development environment isolated from host machine
- - [x] Open source
+ - &#9745; Development environment isolated from host machine
+ - &#9745; Open source
 
 However, it does not keep development environments _isolated from one another_. Currently, all projects share the same Python or NodeJS or Postgresql version. This was fine for achieving the first two goals above, but next I want to bring this feature closer to parity with Microsoft's proprietary offering.
 
