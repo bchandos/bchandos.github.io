@@ -1,6 +1,9 @@
 const fs = require('fs/promises');
 const showdown = require('showdown');
-const converter = new showdown.Converter({metadata: true});
+const converter = new showdown.Converter({
+  metadata: true,
+  strikethrough: true,
+});
 
 const insertData = async (templateName, templateData, key) => {
   // Given a string (templateData), insert into the template 
