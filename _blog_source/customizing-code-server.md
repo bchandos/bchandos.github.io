@@ -37,7 +37,7 @@ I noticed during my testing that at least one of the packages I am installing (l
   && apt-get install -y nodejs \
 ```
 
-Python 3 is included in Debian 11, but the `venv` module - which creates virtual environments for Python apps - is not. Given that I'm currently only running one container for all my project (see the Lessons and next steps section at the end of the post for more information about this), this module is important. Additionally, I want PostgreSQL installed. Unfortunately, the version of NodeJS that is default in Debian 11 is v12, which is 4 versions behind the current LTS version, so here I am injecting NodeSource's script to add v16 instead. (I couldn't even build this blog without doing this!)
+Python 3 is included in Debian 11, but the `venv` module - which creates virtual environments for Python apps - is not. Given that I'm currently only running one container for all my project (see the Lessons and next steps section at the end of the post for more information about this), this module is important. Additionally, I want PostgreSQL installed. Unfortunately, the version of NodeJS that is default in Debian 11 is v12, which is 4 versions behind the current LTS version, so here I am injecting NodeSource's script to add v16 instead. (I couldn't even build this blog post without doing this!)
 
 ```
 RUN curl -fsSL "https://github.com/cdr/code-server/releases/download/v3.12.0/code-server_3.12.0_amd64.deb" \
@@ -72,7 +72,7 @@ So git doesn't complain the first time I try to make a commit!
 
 Now I am ready to build my Docker container: `docker build -t code-server .`
 
-Once complete, I am ready to start. I can use the single command provided in Coder's Docker Hub example, but the recommended way to launch a container these days is to user `docker-compose` (which is a separate install - see Docker's doc~~k~~umentation).
+Once complete, I am ready to start. I can use the single command provided in Coder's Docker Hub example, but the recommended way to launch a container these days is to use `docker-compose` (which is a separate install - see Docker's doc~~k~~umentation).
 
 ```
 version: '3.3'
@@ -86,7 +86,7 @@ services:
             - '4444:4444'
             - '5000:5000'
             - '8000:8000'
-            - '9000:9000'            
+            - '9000:9000'
         volumes:
             - '$HOME/.config:/home/coder/.config'
             - '$HOME/development:/home/coder/project'

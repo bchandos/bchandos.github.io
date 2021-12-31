@@ -73,7 +73,7 @@
   &amp;&amp; curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
   &amp;&amp; apt-get install -y nodejs \
 </code></pre>
-<p>Python 3 is included in Debian 11, but the <code>venv</code> module - which creates virtual environments for Python apps - is not. Given that I'm currently only running one container for all my project (see the Lessons and next steps section at the end of the post for more information about this), this module is important. Additionally, I want PostgreSQL installed. Unfortunately, the version of NodeJS that is default in Debian 11 is v12, which is 4 versions behind the current LTS version, so here I am injecting NodeSource's script to add v16 instead. (I couldn't even build this blog without doing this!)</p>
+<p>Python 3 is included in Debian 11, but the <code>venv</code> module - which creates virtual environments for Python apps - is not. Given that I'm currently only running one container for all my project (see the Lessons and next steps section at the end of the post for more information about this), this module is important. Additionally, I want PostgreSQL installed. Unfortunately, the version of NodeJS that is default in Debian 11 is v12, which is 4 versions behind the current LTS version, so here I am injecting NodeSource's script to add v16 instead. (I couldn't even build this blog post without doing this!)</p>
 <pre><code>RUN curl -fsSL "https://github.com/cdr/code-server/releases/download/v3.12.0/code-server_3.12.0_amd64.deb" \
   --output "/tmp/code-server_3.12.0_amd64.deb"
 </code></pre>
@@ -96,7 +96,7 @@
 </code></pre>
 <p>So git doesn't complain the first time I try to make a commit!</p>
 <p>Now I am ready to build my Docker container: <code>docker build -t code-server .</code></p>
-<p>Once complete, I am ready to start. I can use the single command provided in Coder's Docker Hub example, but the recommended way to launch a container these days is to user <code>docker-compose</code> (which is a separate install - see Docker's doc<del>k</del>umentation).</p>
+<p>Once complete, I am ready to start. I can use the single command provided in Coder's Docker Hub example, but the recommended way to launch a container these days is to use <code>docker-compose</code> (which is a separate install - see Docker's doc<del>k</del>umentation).</p>
 <pre><code>version: '3.3'
 services:
     code-server:
@@ -108,7 +108,7 @@ services:
             - '4444:4444'
             - '5000:5000'
             - '8000:8000'
-            - '9000:9000'            
+            - '9000:9000'
         volumes:
             - '$HOME/.config:/home/coder/.config'
             - '$HOME/development:/home/coder/project'
