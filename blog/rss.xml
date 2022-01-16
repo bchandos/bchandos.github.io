@@ -10,6 +10,14 @@
         <language>en-us</language>
         
     <item>
+      <title>Adding a controller for the dynamic web component</title>
+      <link>https://billchandos.dev/blog/adding_a_controller_for.html</link>
+      <description>Join me again as I continue creating a generic web component that can load and refresh dynamic contents from the backend.</description>
+      <pubDate>15 Jan 2022 20:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/adding_a_controller_for.html</guid>
+    </item>
+    
+    <item>
       <title>Creating your own VS Code server in a container</title>
       <link>https://billchandos.dev/blog/creating_your_own_vs.html</link>
       <description>Join me as I setup a Docker container for running Code Server, an open source implementation of the VSCode back-end server.</description>

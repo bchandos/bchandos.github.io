@@ -1,0 +1,201 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+    <!-- Code highlighting -->
+    <link rel="stylesheet"
+      href="//unpkg.com/@highlightjs/cdn-assets@11.1.0/styles/default.min.css">
+    <script src="//unpkg.com/@highlightjs/cdn-assets@11.1.0/highlight.min.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="creatingaselfcontaineddynamicwebcomponentpart2">Creating a self-contained dynamic web component, part 2</h2>
+<p>In <a href="/blog/create_a_self-contained_dynamic.html">part 1 of this series</a>, I began developing a web component called a "dynamic widget" that can load and reload its contents asynchronously from the backend. Be sure to read the introduction to understand the motivation for such a design, but suffice to say there are advantages to keeping data definitions and presentation logic coupled from a developer ergonomics perspective.</p>
+<h3 id="continuingon">Continuing on…</h3>
+<p>When last we left our widget, it was capable of doing initial load from the server … and not much else. Actually, it can't do anything at all: the server doesn't even exist yet! I will quickly implement the reload method, which I can do because it primarily relies on the <code>_loadContents()</code> method created in part 1. There is only one additional step: when reloading, we very frequently want to make modifications to the parameters we send to the server. This could be filtering parameters on a list of items, state information, or just general context so the server knows how to query data and return results.</p>
+<pre><code>  async reloadContents(argObj) {
+    for (let k of Object.getOwnPropertyNames(argObj)) {
+      this.dataset[k] = argObj[k];
+    }
+    await this._loadContents();
+  }
+</code></pre>
+<p><code>reloadContents(argObj)</code> accepts <code>argObj</code> which is … an object filled with arguments. They must be key-value pairs, and I will want to enforce that soon. The <code>_loadContents()</code> method already processes the elements' <code>dataset</code> so I can simply add these arguments as <code>data-</code> attributes. Note here that this code will not overwrite existing <code>data-</code> attributes if that key is not explicitly included in <code>argObjs</code>. This ensures that I only need to pass in values I want to change and initial values will remain.</p>
+<p>There's not much left to the dynamic widget code itself except for some visual niceities which I'll return to.</p>
+<h3 id="welcometotheserverside">Welcome to the Server Side</h3>
+<p>I setup a <a href="https://bottlepy.org/docs/dev/">bottle.py</a> server for simplicity, although bottle is the basis for Flask so it may look familiar. I will leave the boilerplate code for you to review in the repo, but the route we are concerned with here is <code>/dynamic-widget</code> which accepts all requests for dynamic widget content and returns JSON that includes the rendered template as HTML/CSS/JS.</p>
+<pre><code>@app.get('/dynamic-widget')
+def dynamic_widget():
+    args = request.params
+    filename = f'{args["name"]}.html'
+    results = load_sql_from_template(filename, **args)
+    template = env.get_template(filename)
+    newBody = template.render(**results, **args)
+
+    return json.dumps({
+        'newBody': newBody,
+    })
+</code></pre>
+<p>The first job is the collect the arguments. The filename of the template is derived from the <code>name</code> argument, with <code>.html</code> appended. Of course, if my widget templates were stored in another part of the filesystem and/or used a different extension, that would all be setup here. I could even look up the canonical filepath in a database or elsewhere using a function.</p>
+<p><code>load_sql_from_template()</code> is where things start to get interesting. I am passing in the filename and all remaining arguments (using Python's <code>**</code> to convert a dictionary into keyword arguments). This returns something we're calling <code>results</code> and although this Python code is not typed, you can see that I am expecting a dictionary back, as I again use <code>**</code> to pass these results to the template's <code>render()</code> method, along with all other arguments for good measure. That method returns a string of HTML/CSS/JS that I then return as JSON.</p>
+<p>In part 1 I mentioned that, although I'd like this pattern to work with every back-end and template language, there are limitations. Well <code>load_sql_from_template()</code> is where those limitations are first encountered. However, clever programmers can likely devise their own (likely better!) solutions. The Jinja templating language cannot execute arbitrary Python code of the type that would be needed to (for example) retrieve data from a database or an ORM for its own use. But our stated goal is to include the data retrieval logic with the presentation logic so the dynamic widget is, essentially, self-contained.</p>
+<p>I was thinking about this problem, when I recalled a project I heard about via the <a href="https://pythonbytes.fm/episodes/show/237/separate-your-sql-and-python-asynchronously-with-aiosql">Python Bytes</a> podcast called <a href="https://nackjicholson.github.io/aiosql/"><code>aiosql</code></a>. This library parses an SQL file to retrieve your queries and then lets you execute them via convenient method calls. One of the advantages of <code>aiosql</code> is keeping SQL out of your source code for ease of maintenance.</p>
+<p>The system works by using a comment field above the query with a specific syntax to determine a) what to call the query; b) what it is intended to do (i.e. return a single item, select a single value, etc.). You can read all about it in the quality documentation.</p>
+<p>I'll not belabor this any longer: I am going to place queries written in this format in the comments section of the Jinja template, retrieve them by parsing the file, execute them with <code>aiosql</code> and pass the results to the template rendering engine.</p>
+<p>The format for the query comments needs to be easily identifiable. I have arbitrarily decided that all queries will be contained in a single comment block (denoted in Jinja by <code>{# ... #}</code>) and the comment opening line must contain the string "queries:"</p>
+<pre><code>def load_sql_from_template(template, **kwargs):
+    """ Load aiosql-formatted comment block from Jinja template file """
+    sql_block = list()
+    with open(template, 'r') as t:
+        for l in t.readlines():
+            if ('{#' in l and 'queries:' in l) or l == '\n':
+                continue
+            if '#}' in l:
+                break
+            sql_block.append(l.strip())
+    ...
+</code></pre>
+<p>This is a bit rough, but it works. It would be convenient if the Jinja parser would expose comment blocks somehow, but instead I'll just parse the file as text. This code will take every line between the opening and closing comment delimiters and add them to a list. (I can likely rewrite this using regular expressions, but that will be a job for another day.)</p>
+<p>Thankfully, <code>aiosql</code> is happy to parse queries from a string:</p>
+<pre><code>    queries = aiosql.from_str('\n'.join(sql_block), 'sqlite3')
+</code></pre>
+<p>But I'm not ready to run these queries yet. These widgets are dynamic, meaning the underlying data is dynamic, meaning I am very likely to need to pass an argument (or several) to the query. <code>aiosql</code> can handle this by including <code>:argument_name</code> in the query, but we need to find those arguments and pass them when executing the function. I <em>also</em> need to provide a variable name where the query's results will be stored to pass to the template renderer. To keep this all self-contained, I have defined my own SQL comments to include in the query definition. The library expects <code>name:</code>, but you can add any amount of comments under this and <code>aiosql</code> will parse them and conveniently add them to the docstring for the query object.</p>
+<pre><code>    results = dict()
+    for q in [x for x in queries.available_queries if '_cursor' not in x]:
+        q_ = getattr(queries, q)
+        comments = q_.__doc__.split('\n')
+</code></pre>
+<p>After initializing the results dictionary, I iterate over the parsed queries. These are stored in the <code>available_queries</code> property of <code>queries</code>, although as strings, and with a matching <code>&lt;query_name&gt;_cursor</code> entry. The list comprehension filters those, and in the first line of the loop I retrieve the actual query object itself using <code>get_attr</code>. With that, I can grab the docstring using the <code>__doc__</code> property, and split it on newlines.</p>
+<pre><code>        for comment in comments:
+            if 'args:' in comment:
+                expected_args = json.loads(comment.split(':')[1].strip())
+            elif 'key:' in comment:
+                key = comment.split(':')[1].strip()
+</code></pre>
+<p>Now to iterate over those extracted comments looking for my specially named entries. These are lines that begin with "args:" and "key:". <code>args</code> should be a string representation of a Javascript array so that it can be parsed by <code>json.loads()</code>. <code>key</code> should be a string. Some basic string manipulation to separate out the actual values, and I am ready to actually run the query. Well, almost …</p>
+<pre><code>        q_args = {k: v for k, v in kwargs.items() if k in expected_args}
+</code></pre>
+<p>So as not to pass every argument provided to the controller, I filter the dictionary (using a dictionary comprehension) to only include those the query expects.</p>
+<p><em>Now</em> I can execute the query, providing the expected arguments, and storing the result in the results dictionary using the key.</p>
+<pre><code>        result = q_(conn, **q_args)
+        results[key] = result
+    return results
+</code></pre>
+<p>Whew! That was a lot to get through, but to summarize:</p>
+<ul>
+<li>Query definitions are stored in a specially formatted comment block at the top of the dyanmic widget's template file;</li>
+<li>The queries are parsed by <code>aiosql</code>;</li>
+<li>Additional <em>query</em> comments are parsed to find argument names and the name of the key the template expects;</li>
+<li>The queries are executed and the results returned to the controller, which immediately passes them to the template renderer;</li>
+<li>The rendered template contents are sent back to the dynamic widget as JSON.</li>
+</ul>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>Much is missing right now, including data validation or any error handling. (What happens, for example, if the expected query arguments are not passed to the controller?) But this post is getting too long, so I'll save that - plus those visual niceities, and a working example - for part 3.</p><div id="blog-footer"><div>&#8637; <a href="creating_your_own_vs.html">Creating your own VS Code server in a container</a></div> <div></div></div>
+      <div id="blog-recommendations">
+        <h4>You may also like ... </h4>
+        <ul><li><a href="create_a_self-contained_dynamic.html">Create a self-contained dynamic web component, part 1</a></li></ul>
+      </div>
+      
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+<script>
+    hljs.highlightAll();
+</script>
+
+</html>
