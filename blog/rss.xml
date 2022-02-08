@@ -10,6 +10,14 @@
         <language>en-us</language>
         
     <item>
+      <title>On failure and finishing the job... Part 3 of dynamic widget</title>
+      <link>https://billchandos.dev/blog/on_failure_and_finishing.html</link>
+      <description>In trying to create a working demo of dynamic widgets, I discovered several issues! Join me as I attempt to address them.</description>
+      <pubDate>08 Feb 2022 06:00:00 GMT</pubDate>
+      <guid>https://billchandos.dev/blog/on_failure_and_finishing.html</guid>
+    </item>
+    
+    <item>
       <title>Adding a controller for the dynamic web component</title>
       <link>https://billchandos.dev/blog/adding_a_controller_for.html</link>
       <description>Join me again as I continue creating a generic web component that can load and refresh dynamic contents from the backend.</description>

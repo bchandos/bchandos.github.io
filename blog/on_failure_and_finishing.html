@@ -1,0 +1,194 @@
+<!DOCTYPE HTML>
+<!--
+    Miniport by HTML5 UP
+    html5up.net | @ajlkn
+    Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+<head>
+    <title>Bill Chandos - Blog</title>
+    <meta name="description"
+        content="This is a software development blog by Bill Chandos." />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.ico" />
+    <!-- Code highlighting -->
+    <link rel="stylesheet"
+      href="//unpkg.com/@highlightjs/cdn-assets@11.1.0/styles/default.min.css">
+    <script src="//unpkg.com/@highlightjs/cdn-assets@11.1.0/highlight.min.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <nav id="nav">
+        <ul class="container">
+            <li><a href="/index.html#top">Top</a></li>
+            <li><a href="/index.html#work">Work</a></li>
+            <li><a href="/index.html#portfolio">Portfolio</a></li>
+            <li><a href="/index.html#contact">Contact</a></li>
+            <li><a href="/blog">Blog</a></li>
+        </ul>
+    </nav>
+
+    <!-- Home -->
+    <article id="blog-top" class="wrapper style1">
+        <div class="container">
+            <div class="row">
+                <div class="col-12-medium">
+                    <header>
+                        <h1>
+                            <strong>A Blog</strong>
+                            <a type="application/rss+xml" href="/blog/rss.xml" title="RSS Feed">
+                                <img src="/images/icons/rss.svg" alt="RSS Feed Icon">
+                            </a>
+                        </h1>
+                    </header>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article id="blog-content" class="wrapper style2">
+        <div class="container">
+            <div class="row">
+                <div class="col-8 col-7-large col-12-medium">
+                    <h2 id="creatingaselfcontaineddynamicwebcomponentpart3">Creating a self-contained dynamic web component, part 3</h2>
+<p>In <a href="/blog/adding_a_controller_for.html">part 2 of this series</a> I built the server side functionality for the "dynamic widget" web component. It all looked good … in my code editor. I concluded that post by stating I would implement a working demo, and that's when the problems started.</p>
+<p>Bugs are routine, of course, but building a demo revealed several fundamental design flaws with no obvious solutions. Here I will catalog those flaws and work through their potential solutions, and hopefully we all learn something along the way. If that thing happens to be "don't start a series of blog posts about a really swell idea until you've proven it out", well, so be it.</p>
+<h3 id="preamble">Preamble</h3>
+<p>My working demo is a very (very!) simple single page to catalog books: a form to enter the title, author, and year of a book; a dynamic widget containing the list of books. The demo has no persistent database, so I'm just loading a list of books from JSON data to populate an in-memory <code>sqlite</code> database. The dynamic widget has a single query at the top for getting the list of all books.</p>
+<h3 id="problem1multiplequeries">Problem 1: Multiple queries</h3>
+<p>Anything calling itself "dynamic" should be able to respond to changing parameters. In the case of a book catalog, search is a pretty basic function. A query that searches the books might also look quite a bit different than a query that returns all books:</p>
+<pre><code>select * from books;
+</code></pre>
+<p>vs.</p>
+<pre><code>select * from books
+where title like '%' || :title || '%'
+and author like '%' || :author || '%'
+and year like '%' || :year || '%';
+</code></pre>
+<p>You'd be correct in observing that the second query <em>will</em> work to return all books <em>if given blank values for all required parameters.</em> In this demo app, with a few dozen books, that works great! However, SQL <code>like</code> comparisons are not free. On large datasets, it is desireable to optimize SQL. In general though, I want to support multiple queries.</p>
+<p>My first solution for this problem is to, essentially, use the provided parameters to determine which query to run. These are defined in the query <code>args</code> parameter (covered in part 2). This imposes a limitation that no two queries can expect the same set of arguments. Will this be a problem?</p>
+<p>To accomplish this, I add the following conditional to the <code>load_sql_from_template()</code> function covered in part 2:</p>
+<pre><code>if set(q_args) != set(expected_args):
+    # In the case that the expected arguments are not provided
+    # do not execute query 
+    continue
+</code></pre>
+<p>The expected arguments are stored as a <code>list</code>. A simple way to compare lists for equality is to coerce into a <code>set</code>. This discards ordering (which I don't care about) and duplicates (which should not exist) and allows the use of <code>==</code>.</p>
+<p><em>Note: <code>q_args</code> is a dictionary, but <code>set()</code> only operates on the keys (essentially, <code>q_args.keys()</code>), which is the desired behavior in this case.</em></p>
+<pre><code>&gt;&gt;&gt; [1,2,3] == [3,2,1]
+False
+&gt;&gt;&gt; set([1,2,3]) == set([3,2,1])
+True
+</code></pre>
+<p>Great! Problem solved! Yeah, no. Because I made the design decision (as noted in part 2) to allow the absence of parameters given to the reload function to indicate a desire to keep the existing values, I lack an explicit way to remove arguments. And because I determine which query will run by the presence or absence of arguments, well, you see the problem.</p>
+<p>The original design decision had this basis: the ability to specify only the parameters that differ from current widget state is useful because sometimes <em>only the difference is available</em>. Meaning, whatever code is requesting the widget reload may only have access to some new value that it would like to see reflected, but not be aware of (or care about) other parameter values. </p>
+<p>A contrived example: Imagine in our current demo if I wanted to write a function to just filter results by an author. If the user had previously filtered by title or year, I would want to respect that and leave those values in place. I want my function to <em>add</em> a parameter to the query, not replace it. Likewise, if the user deleted a filter, I want to remove just that parameter. So it's a useful feature.</p>
+<p>So how can I allow for this usage and still provide the option to explicitly clear existing parameters when required? Perhaps a third argument to the <code>reloadDynamicWidget()</code> function?</p>
+<p><code>const reloadDynamicWidget = (name, argObj, clearArgs=false) =&gt; { ... }</code></p>
+<p>Note the new third argument, with a default value. <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Default_parameters">Default parameters</a> were added in ES2015 and are well supported by all browsers. I've set the default value to <code>false</code> here because I want to leave the existing behavior (additive changes to parameters) as the … default.</p>
+<p>That function is just a wrapper for the dynamic widget's <code>reloadContents()</code> method, so that's where I will actually add the functionality.</p>
+<pre><code>async reloadContents(argObj, clearArgs) {
+    if (clearArgs === true) {
+      for (let k in this.dataset) {
+        delete this.dataset[k];
+      }
+    }
+    ...
+}
+</code></pre>
+<h3 id="problem2theshadowdom">Problem 2: The Shadow DOM…</h3>
+<p>The <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM">shadow DOM</a> is a key part of encapsulation in web components. It keeps markup, styles, and Javascript separate from the rest of the page. This is great!</p>
+<p>Except for how Javascript contained within the dynamic widget template is parsed and added to the <code>Window</code> scope via <code>document.createElement('script')</code>. Despite the fact that I am appending this created element <em>to the shadow DOM root</em>, it is still executing in the global scope:</p>
+<pre><code>&lt;script&gt;
+  console.log(this)
+&lt;/script&gt;
+
+...
+
+&gt; Window 
+</code></pre>
+<p>This <a href="https://github.com/whatwg/html/issues/5754">appears to be</a> known behavior.</p>
+<p>Now the JS contained within my template no longer has a reference to the shadow DOM in which it's written. In the case of my demo, I want to conditionally create a button to clear the search criteria filtering. Because the button is conditionally displayed (i.e. it's only there when filtering is active) I wanted it to be contained within the dynamic widget, which is aware of its state. But I can't even add an event listener to the button, because that JS will be executed in the <code>Window</code> scope, <em>which can't see the button inside the shadow DOM!</em></p>
+<p>It's a mess, and it's poor design.</p>
+<p>A number of options come to mind:</p>
+<ol>
+<li>Move the button outside the dynamic widget. This ensures it's operating in the correct scope, but this also means the button will need to be permanently displayed because it cannot be aware of the state inside the widget (e.g. whether it is in search mode). Perhaps this is fine. The button just won't do anything but refresh the widget to the existing state if pressed when there is no filtering. But it's not great interface design.</li>
+<li>Create and update a global object containing references to all the shadow DOMs in all the dynamic widgets in the page. This is a technically appealing solution, because … OBJECTS! CODE! REFERENCES! … but I'm not convinced it's the best idea yet.</li>
+</ol>
+<p>So that I can wrap all this up, I'm going with option #1 for now. But this is an issue that will need resolution at some point. </p>
+<p>I am suddenly reminded of a quote from <a href="https://www.youtube.com/watch?v=cuHDQhDhvPE">this Fireship video</a> (emphasis mine):</p>
+<blockquote>
+  <p>About once a year a hot take will go viral saying that you don't need a Javascript framework at all. Any expert web developer needs to have a solid understanding of vanilla JS, but even if you're a Javascript god, attempting to build a non-trivial app with it is a recipe for disaster. <strong>What you'll end up doing is building your own shitty Javascript framework, and the last thing the world needs is another Javascript framework.</strong></p>
+</blockquote>
+<h3 id="thefinaldemo">The final demo</h3>
+<p>… can be found here: https://github.com/bchandos/web-component</p>
+<h3 id="lessonsandnextsteps">Lessons and next steps</h3>
+<p>To be honest, it doesn't feel like much has been accomplished here. I've just created a basic web component that has some methods to reload its contents from the server. Ultimately, this is not very useful as a standalone project, and I doubt I'll be utilizing it elsewhere. However, I did learn some things about native web components and the shadow DOM. I think parsing SQL from the template comments was … a novel solution, and working through the various challenges was a useful exercise.</p>
+<p>But really, this is not a great idea. Or even a good one. That is sometimes the inevitable result of experimentation, and I just hope that I've learned enough to recognize design flaws earlier in the process.</p><div id="blog-footer"><div>&#8637; <a href="adding_a_controller_for.html">Adding a controller for the dynamic web component</a></div> <div></div></div>
+      <div id="blog-recommendations">
+        <h4>You may also like ... </h4>
+        <ul><li><a href="adding_a_controller_for.html">Adding a controller for the dynamic web component</a></li><li><a href="create_a_self-contained_dynamic.html">Create a self-contained dynamic web component, part 1</a></li></ul>
+      </div>
+      
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Contact -->
+    <!-- Future form integration: https://www.tomfaltesek.com/azure-function-contact-form-http-trigger/ -->
+    <article id="contact" class="wrapper style4">
+        <div class="container medium">
+            <header>
+                <h2>Let's work together.</h2>
+                <p>Please contact me to discuss opportunities.</p>
+            </header>
+            <div class="col-12">
+                <hr />
+                <h3>Contact me on ...</h3>
+                <ul class="social">
+                    <li>
+                        <a href="mailto:contact@billchandos.dev">
+                            <img src="/images/icons/email.svg" alt="E-mail">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/bill-chandos">
+                            <img src="/images/icons/linkedin.svg" alt="LinkedIn">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/bchandos">
+                            <img src="/images/icons/github.svg" alt="Github">
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://launchpad.net/~bchandos">
+                            <img src="/images/icons/launchpad.svg" alt="Launchpad">
+                        </a>
+                    </li>
+                </ul>
+                <hr />
+            </div>
+        </div>
+        <footer>
+            <ul id="copyright">
+                <li>&copy; Bill Chandos. All rights reserved.</li>
+                <li>Design: Bill Chandos and <a href="http://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </footer>
+        </div>
+    </article>
+
+</body>
+<script>
+    hljs.highlightAll();
+</script>
+
+</html>
