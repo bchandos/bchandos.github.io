@@ -8,6 +8,9 @@ tags: vscode,code-server,docker,nodejs,postgresql,linux,fedora,open-source
 ---
 
 ## Creating a custom VS Code server in a container
+
+_May 2022 update: I've stopped using this method for local development and switched to VS Codium. While an interesting project, it ultimately solves problems that I don't really have. All my local projects are personal and demo in nature, so they are fine to use the system versions of Node and Python. And even if they weren't, I can utilize a manager like `nvm` or `pyenv` (respectively) to manage this. They can likely even all share a database, but if not, I can easily spin up `postgresql` docker containers. I still think this is an interesting solution but would make more sense for multiple developers working on multiple managed development environments. Original post..._
+
 Like many developers today, I really enjoy [VS Code](https://code.visualstudio.com/), Microsoft's popular code editor. Microsoft describes it as "built on open source", which primarily means that, while to underlying code is open source, the application you download and run from Microsoft is not. Microsoft includes telemetry and several proprietary closed-source features in their release version, but the open source base can be packaged and distributed by others, which is what the popular [VSCodium](https://vscodium.com/) project does.
 
 I am by no means an open source zealot but - to be completely frank - I don't trust Microsoft and their rebranding effort as Linux-loving open-source stalwarts. [Others agree](https://dusted.codes/can-we-trust-microsoft-with-open-source). I don't want to become dependent upon a product and an ecosystem that will someday limit my ability to control my own development environment.
@@ -50,24 +53,32 @@ Coder's build process assumes a local copy of the `code-server` Debian package i
 RUN curl -fsSL "https://raw.githubusercontent.com/cdr/code-server/1d8806fc425fd5aaf4ac622f2a4d2d33c67b097b/ci/release-image/entrypoint.sh" \
   --output "/usr/bin/entrypoint.sh"
 ```
+
 Same story with `entrypoint.sh`, the script that runs the code-server.
 
 ```
 RUN echo "$(head -n -1 /usr/bin/entrypoint.sh ; echo 'sudo service postgresql start' ; tail -1 /usr/bin/entrypoint.sh)" > /usr/bin/entrypoint.sh
 ```
+
 I was finding that PostgreSQL was not running when I started the container, so I wanted that to happen everytime it starts, which means this interesting command to inject one command (`sudo service postgresql start`) as the second to last line in the file.
+
 ```
 RUN chmod +x /usr/bin/entrypoint.sh
 ```
+
 The downloaded and manipulated version of `entrypoint.sh` needs to be executable.
+
 ```
 RUN mkdir -p /home/coder/.local/share/code-server/User \
  && printf "{\"workbench.colorTheme\": \"Default Dark+\",\"files.autoSave\": \"off\"}" > /home/coder/.local/share/code-server/User/settings.json
 ```
+
 In order to retain some basic preferences (like using dark them, and turning off file auto-save) between image rebuilds, I inject those settings as appropriate. I have found there are other settings - such as keybindings - and so I am developing another way to include these in the build. Finally ...
+
 ```
 RUN git config --global user.name "MyUserName" && git config --global user.email "name@example.dev"
 ```
+
 So git doesn't complain the first time I try to make a commit!
 
 Now I am ready to build my Docker container: `docker build -t code-server .`
@@ -102,15 +113,17 @@ And that's it! I launch the container with `docker-compose up` and within a few 
 ### Lessons and next steps
 
 This ticks a couple of the boxes:
- - &#9745; Development environment isolated from host machine
- - &#9745; Open source
+
+- &#9745; Development environment isolated from host machine
+- &#9745; Open source
 
 However, it does not keep development environments _isolated from one another_. Currently, all projects share the same Python or NodeJS or Postgresql version. This was fine for achieving the first two goals above, but next I want to bring this feature closer to parity with Microsoft's proprietary offering.
 
 There are some immediate, obvious challenges here:
- - The current Debian based images are _large_ - over 1GB each; I will need one for each _type_ of project, and a container for each
- - Because each container serves its own code interface, there may be strange behavior between them depending on what is being stored by Chromium
- - Settings and keybindings within each container need to propogate between them
- - The installed app icon kinda ... sucks (sorry Coder), and so I would like to change it
+
+- The current Debian based images are _large_ - over 1GB each; I will need one for each _type_ of project, and a container for each
+- Because each container serves its own code interface, there may be strange behavior between them depending on what is being stored by Chromium
+- Settings and keybindings within each container need to propogate between them
+- The installed app icon kinda ... sucks (sorry Coder), and so I would like to change it
 
 But I hope to address all of them and share the results in another blog post!
