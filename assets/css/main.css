@@ -402,6 +402,7 @@ footer > p {
   flex-wrap: wrap;
   box-sizing: border-box;
   align-items: stretch;
+  justify-content: center;
 }
 
 .row > * {
@@ -1825,6 +1826,7 @@ button.large,
 .button.large {
   font-size: 1.5em;
   letter-spacing: -0.025em;
+  border-radius: 8px;
 }
 
 input[type="button"].alt,
@@ -1944,6 +1946,8 @@ ul.actions li:first-child {
     0px 2px 3px 0px rgba(0, 0, 0, 0.1);
   text-align: center;
   padding: 2em;
+  border-radius: 8px;
+  height: 100%;
 }
 
 .box.style1 {
@@ -1987,6 +1991,10 @@ ul.actions li:first-child {
   padding-bottom: 0;
 }
 
+.box img {
+  border-top-right-radius: 8px;
+  border-top-left-radius: 8px;
+}
 /* Wrappers */
 
 .wrapper {
@@ -2005,7 +2013,7 @@ ul.actions li:first-child {
 .wrapper.style2 {
   background-color: #fafafa;
   text-shadow: 1px 1px 0px #fff;
-  text-align: left;
+  text-align: center;
 }
 
 .wrapper.style3 {
